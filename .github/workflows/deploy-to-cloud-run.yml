@@ -1,19 +1,16 @@
 name: Build & Deploy to Google Cloud Run
-
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
-  
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION }}
   REPO_NAME: ${{ secrets.GCP_ARTIFACT_REPO }}
   SERVICE: ${{ secrets.CLOUD_RUN_SERVICE }}
-  IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/iris-api
 
 jobs:
   build-and-deploy:
@@ -21,7 +18,6 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,28 +36,24 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          # Build the full image name from secrets
-          IMAGE_NAME="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/iris-api"
-      
-          # Full tag with commit SHA
+          IMAGE_NAME="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/iris-api"
           FULL_TAG="${IMAGE_NAME}:${{ github.sha }}"
-      
+
           echo "Building image: $FULL_TAG"
-      
           docker build -t "$FULL_TAG" .
-      
+
           echo "Pushing image: $FULL_TAG"
           docker push "$FULL_TAG"
 
       - name: Set image tag
         id: vars
         run: |
-          echo "full_image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/iris-api:${{ github.sha }}" >> $GITHUB_OUTPUT
-            
+          echo "full_image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/iris-api:${{ github.sha }}" >> $GITHUB_OUTPUT
+
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ secrets.CLOUD_RUN_SERVICE }}
-          region: ${{ secrets.GCP_REGION }}
-          image: "$$   {{ secrets.GCP_REGION }}-docker.pkg.dev/   $${{ secrets.GCP_PROJECT_ID }}/$$   {{ secrets.GCP_ARTIFACT_REPO }}/iris-api:   $${{ github.sha }}"
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ steps.vars.outputs.full_image }}
           flags: '--allow-unauthenticated --platform managed --port 8080 --service-account=cloud-run-runtime@fastapi-iris-demo.iam.gserviceaccount.com'

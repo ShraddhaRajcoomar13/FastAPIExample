@@ -40,8 +40,18 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          docker build -t ${{ env.IMAGE }}:${{ github.sha }} .
-          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          # Build the full image name from secrets
+          IMAGE_NAME="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/iris-api"
+      
+          # Full tag with commit SHA
+          FULL_TAG="${IMAGE_NAME}:${{ github.sha }}"
+      
+          echo "Building image: $FULL_TAG"
+      
+          docker build -t "$FULL_TAG" .
+      
+          echo "Pushing image: $FULL_TAG"
+          docker push "$FULL_TAG"
 
       - name: Deploy to Cloud Run
         id: deploy

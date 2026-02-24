@@ -54,10 +54,9 @@ jobs:
           docker push "$FULL_TAG"
 
       - name: Deploy to Cloud Run
-        id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: ${{ env.SERVICE }}
-          region: ${{ env.REGION }}
-          image: ${{ env.IMAGE }}:${{ github.sha }}
-          flags: '--allow-unauthenticated --platform managed --port 8080'
+          service: ${{ secrets.CLOUD_RUN_SERVICE }}
+          region: ${{ secrets.GCP_REGION }}
+          image: "$$   {{ secrets.GCP_REGION }}-docker.pkg.dev/   $${{ secrets.GCP_PROJECT_ID }}/$$   {{ secrets.GCP_ARTIFACT_REPO }}/iris-api:   $${{ github.sha }}"
+          flags: '--allow-unauthenticated --platform managed --port 8080 --service-account=cloud-run-runtime@fastapi-iris-demo.iam.gserviceaccount.com'

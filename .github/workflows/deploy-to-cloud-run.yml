@@ -53,6 +53,11 @@ jobs:
           echo "Pushing image: $FULL_TAG"
           docker push "$FULL_TAG"
 
+      - name: Set image tag
+        id: vars
+        run: |
+          echo "full_image=${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/iris-api:${{ github.sha }}" >> $GITHUB_OUTPUT
+            
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
         with:
